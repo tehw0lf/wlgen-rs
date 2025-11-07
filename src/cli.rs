@@ -107,13 +107,14 @@ impl Cli {
                 let placeholder = mask_bytes[i + 1];
 
                 // Handle ?1 through ?9
-                if placeholder >= b'1' && placeholder <= b'9' {
+                if (b'1'..=b'9').contains(&placeholder) {
                     let charset_num = (placeholder - b'0') as usize;
-                    let charset = self.get_charset(charset_num)
-                        .with_context(|| format!("charset ?{} not defined", charset_num))?;
+                    let charset = self
+                        .get_charset(charset_num)
+                        .with_context(|| format!("charset ?{charset_num} not defined"))?;
 
                     if charset.is_empty() {
-                        return Err(anyhow!("charset ?{} is empty", charset_num));
+                        return Err(anyhow!("charset ?{charset_num} is empty"));
                     }
 
                     charsets.push(charset.as_bytes().to_vec());
@@ -196,15 +197,24 @@ mod tests {
     fn test_parse_all_charsets() {
         let cli = Cli::parse_from(vec![
             "wlgen-rs",
-            "-1", "a",
-            "-2", "b",
-            "-3", "c",
-            "-4", "d",
-            "-5", "e",
-            "-6", "f",
-            "-7", "g",
-            "-8", "h",
-            "-9", "i",
+            "-1",
+            "a",
+            "-2",
+            "b",
+            "-3",
+            "c",
+            "-4",
+            "d",
+            "-5",
+            "e",
+            "-6",
+            "f",
+            "-7",
+            "g",
+            "-8",
+            "h",
+            "-9",
+            "i",
             "?1?2?3?4?5?6?7?8?9",
         ]);
         let charsets = cli.parse_mask().unwrap();
@@ -231,7 +241,10 @@ mod tests {
         let result = cli.parse_mask();
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("charset ?2 not defined"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("charset ?2 not defined"));
     }
 
     #[test]
@@ -240,7 +253,10 @@ mod tests {
         let result = cli.parse_mask();
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("incomplete placeholder"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("incomplete placeholder"));
     }
 
     #[test]
@@ -249,7 +265,10 @@ mod tests {
         let result = cli.parse_mask();
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("invalid placeholder"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("invalid placeholder"));
     }
 
     #[test]
@@ -258,7 +277,10 @@ mod tests {
         let result = cli.parse_mask();
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("mask cannot be empty"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("mask cannot be empty"));
     }
 
     #[test]

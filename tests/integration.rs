@@ -5,7 +5,7 @@ use std::process::Command;
 #[test]
 fn test_cli_simple_wordlist() {
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "-1", "ab", "-2", "12", "?1?2"])
+        .args(["run", "--quiet", "--", "-1", "ab", "-2", "12", "?1?2"])
         .output()
         .expect("failed to execute wlgen-rs");
 
@@ -20,7 +20,9 @@ fn test_cli_simple_wordlist() {
 #[test]
 fn test_cli_three_positions() {
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "-1", "ab", "-2", "12", "-3", "xy", "?1?2?3"])
+        .args([
+            "run", "--quiet", "--", "-1", "ab", "-2", "12", "-3", "xy", "?1?2?3",
+        ])
         .output()
         .expect("failed to execute wlgen-rs");
 
@@ -38,7 +40,7 @@ fn test_cli_three_positions() {
 #[test]
 fn test_cli_repeated_charset() {
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "-1", "ab", "?1?1"])
+        .args(["run", "--quiet", "--", "-1", "ab", "?1?1"])
         .output()
         .expect("failed to execute wlgen-rs");
 
@@ -53,7 +55,7 @@ fn test_cli_repeated_charset() {
 #[test]
 fn test_cli_literal_characters() {
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "-1", "ab", "x?1y"])
+        .args(["run", "--quiet", "--", "-1", "ab", "x?1y"])
         .output()
         .expect("failed to execute wlgen-rs");
 
@@ -68,7 +70,7 @@ fn test_cli_literal_characters() {
 #[test]
 fn test_cli_undefined_charset_error() {
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "-1", "ab", "?1?2"])
+        .args(["run", "--quiet", "--", "-1", "ab", "?1?2"])
         .output()
         .expect("failed to execute wlgen-rs");
 
@@ -81,7 +83,7 @@ fn test_cli_undefined_charset_error() {
 #[test]
 fn test_cli_help() {
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "--help"])
+        .args(["run", "--quiet", "--", "--help"])
         .output()
         .expect("failed to execute wlgen-rs");
 
@@ -95,7 +97,7 @@ fn test_cli_help() {
 #[test]
 fn test_cli_version() {
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "--version"])
+        .args(["run", "--quiet", "--", "--version"])
         .output()
         .expect("failed to execute wlgen-rs");
 
@@ -108,12 +110,8 @@ fn test_cli_version() {
 #[test]
 fn test_cli_all_charsets() {
     let output = Command::new("cargo")
-        .args(&[
-            "run", "--quiet", "--",
-            "-1", "a",
-            "-2", "b",
-            "-3", "c",
-            "?1?2?3",
+        .args([
+            "run", "--quiet", "--", "-1", "a", "-2", "b", "-3", "c", "?1?2?3",
         ])
         .output()
         .expect("failed to execute wlgen-rs");
@@ -130,7 +128,17 @@ fn test_cli_all_charsets() {
 fn test_cli_large_wordlist() {
     // Test with a larger wordlist to verify performance
     let output = Command::new("cargo")
-        .args(&["run", "--release", "--quiet", "--", "-1", "abc", "-2", "123", "?1?1?2?2"])
+        .args([
+            "run",
+            "--release",
+            "--quiet",
+            "--",
+            "-1",
+            "abc",
+            "-2",
+            "123",
+            "?1?1?2?2",
+        ])
         .output()
         .expect("failed to execute wlgen-rs");
 

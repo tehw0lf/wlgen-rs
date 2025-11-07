@@ -37,9 +37,9 @@ fn bench_medium_wordlist(c: &mut Criterion) {
     let mut group = c.benchmark_group("medium_wordlist");
 
     let charsets = vec![
-        b"abcdefghij".to_vec(),    // 10 chars
-        b"0123456789".to_vec(),    // 10 chars
-        b"0123456789".to_vec(),    // 10 chars
+        b"abcdefghij".to_vec(), // 10 chars
+        b"0123456789".to_vec(), // 10 chars
+        b"0123456789".to_vec(), // 10 chars
     ];
     let keyspace = 1000;
 
@@ -69,16 +69,16 @@ fn bench_large_wordlist(c: &mut Criterion) {
     let mut group = c.benchmark_group("large_wordlist");
 
     let charsets = vec![
-        b"abcdefghij".to_vec(),    // 10 chars
-        b"0123456789".to_vec(),    // 10 chars
-        b"0123456789".to_vec(),    // 10 chars
-        b"0123456789".to_vec(),    // 10 chars
-        b"0123456789".to_vec(),    // 10 chars
+        b"abcdefghij".to_vec(), // 10 chars
+        b"0123456789".to_vec(), // 10 chars
+        b"0123456789".to_vec(), // 10 chars
+        b"0123456789".to_vec(), // 10 chars
+        b"0123456789".to_vec(), // 10 chars
     ];
     let keyspace = 100_000;
 
     group.throughput(Throughput::Elements(keyspace));
-    group.sample_size(20);  // Reduce sample size for long-running benchmarks
+    group.sample_size(20); // Reduce sample size for long-running benchmarks
 
     group.bench_function("write_to_sink", |b| {
         b.iter(|| {
@@ -95,17 +95,17 @@ fn bench_very_large_wordlist(c: &mut Criterion) {
     let mut group = c.benchmark_group("very_large_wordlist");
 
     let charsets = vec![
-        b"abcdefghij".to_vec(),    // 10 chars
-        b"0123456789".to_vec(),    // 10 chars
-        b"0123456789".to_vec(),    // 10 chars
-        b"0123456789".to_vec(),    // 10 chars
-        b"0123456789".to_vec(),    // 10 chars
-        b"0123456789".to_vec(),    // 10 chars
+        b"abcdefghij".to_vec(), // 10 chars
+        b"0123456789".to_vec(), // 10 chars
+        b"0123456789".to_vec(), // 10 chars
+        b"0123456789".to_vec(), // 10 chars
+        b"0123456789".to_vec(), // 10 chars
+        b"0123456789".to_vec(), // 10 chars
     ];
     let keyspace = 1_000_000;
 
     group.throughput(Throughput::Elements(keyspace));
-    group.sample_size(10);  // Reduce sample size for very long-running benchmarks
+    group.sample_size(10); // Reduce sample size for very long-running benchmarks
 
     group.bench_function("write_to_sink", |b| {
         b.iter(|| {
