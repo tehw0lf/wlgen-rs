@@ -486,11 +486,15 @@ wlgen-rs -1 'ABCDEF' -2 '0123456789' -3 '!@#$' '?1?1?2?2?3'
 - [x] **Exceed maskprocessor performance** ✅
   - **Final result: 164M words/s (11% faster than maskprocessor's 147.5M words/s)**
 
-### Further CPU Optimizations (Optional, diminishing returns)
-- [ ] SIMD optimization for character lookups (requires unsafe/nightly, ~5-10% gain)
-- [ ] Multi-threaded generation with work stealing (complex for stdout, ~20-30% gain)
-- [ ] Memory-mapped output for file writes (not applicable to stdout)
-- [ ] Unsafe optimizations: unchecked array access (~5% gain, sacrifices safety)
+### Further CPU Optimizations (Status & Decision)
+
+**Not Planned - Requires unsafe code or incompatible with design:**
+- ❌ SIMD optimization (requires unsafe/nightly, ~5-10% gain)
+- ❌ Unsafe optimizations: unchecked array access (~5% gain, sacrifices safety)
+- ❌ Multi-threaded generation (incompatible with odometer algorithm + stdout streaming)
+- ❌ Memory-mapped output (not applicable to stdout, our primary use case)
+
+**Conclusion:** Current performance (164M words/s, 11% faster than maskprocessor) is excellent using pure safe Rust. Further optimization would sacrifice code quality for minimal gains. Focus shifts to useful features instead.
 
 ### Features
 - [ ] Resume from specific position (for distributed workloads)
