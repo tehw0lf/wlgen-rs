@@ -1,0 +1,32 @@
+[package]
+name = "wlgen-rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["tehw0lf <tehwolf@protonmail.com>"]
+description = "High-performance wordlist generator for hashcat - achieving 100-200M combinations/second"
+license = "MIT"
+repository = "https://github.com/tehw0lf/wlgen-rs"
+keywords = ["wordlist", "generator", "hashcat", "password", "security"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "wlgen-rs"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+anyhow = "1.0"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "wordlist_bench"
+harness = false
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+debug = true
