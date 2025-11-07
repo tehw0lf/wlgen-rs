@@ -1,6 +1,6 @@
 # wlgen-rs
 
-CPU-based Rust wordlist generator achieving **~40M combinations/second**.
+CPU-based Rust wordlist generator achieving **~164M combinations/second** - **11% faster than maskprocessor**!
 
 > **⚡ For Maximum Performance:** See [GPU Scatter-Gather Wordlist Generator](../gpu-scatter-gather/) for 500M-1B words/s using GPU acceleration and novel algorithms.
 
@@ -10,35 +10,37 @@ CPU-based Rust wordlist generator achieving **~40M combinations/second**.
 
 ### Performance
 
-**Current Performance (2025-11-07 Benchmark):**
-- **~41.8M combinations/second** on modern hardware (actual measured: 676M words in 16.18s)
-- **51x faster** than Python implementation (~780K/s)
-- **0.29x speed** compared to maskprocessor (~144.8M/s)
+**Current Performance (2025-11-07 Optimized):**
+- **~164M combinations/second** average, 168M peak (actual measured: 676M words in 4.1s)
+- **3.93x faster** than initial implementation (41.8M/s)
+- **211x faster** than Python implementation (~780K/s)
+- **1.11x faster** than maskprocessor (~147.5M/s) - **11% performance advantage!**
 - **O(1) memory usage** - single buffer reused for all words
 - **Zero-copy iteration** - no string allocations per word
-- **Fully saturates WPA2-PSK cracking** (911.8 KH/s on RTX 4070) with 46x surplus
+- **Fully saturates WPA2-PSK cracking** (911.8 KH/s on RTX 4070) with 180x surplus
 
 ### Project Status & Purpose
 
 This project serves as:
+- ✅ **High-performance CPU generator** - 11% faster than maskprocessor
 - ✅ **CPU fallback** when GPU is unavailable
 - ✅ **Reference implementation** for correctness validation
-- ✅ **Learning project** demonstrating Rust performance over Python (51x speedup)
-- ⚠️ **Not performance-competitive** with maskprocessor (CPU) or GPU implementations
+- ✅ **Learning project** demonstrating Rust performance over Python (211x speedup)
 
 **For high-performance wordlist generation (500M-1B words/s), use the GPU Scatter-Gather project instead.**
 
 ### Use Cases
 
 **Suitable for:**
-- ✅ WPA2-PSK cracking (44x surplus over hashcat's 911 KH/s on RTX 4070)
+- ✅ WPA2-PSK cracking (180x surplus over hashcat's 911 KH/s on RTX 4070)
 - ✅ Slow hash algorithms (bcrypt, scrypt, Argon2)
 - ✅ CPU-only environments (no GPU available)
+- ✅ General-purpose CPU wordlist generation (faster than maskprocessor!)
 - ✅ Learning Rust systems programming
 
-**Not recommended for:**
-- ❌ Fast hash algorithms (MD5, NTLM, SHA-256) - use maskprocessor or GPU Scatter-Gather
-- ❌ Maximum performance requirements - use GPU Scatter-Gather project instead
+**Consider GPU alternative for:**
+- 💡 Fast hash algorithms requiring 500M+ words/s (MD5, NTLM, SHA-256) - use GPU Scatter-Gather
+- 💡 Distributed workloads requiring extreme throughput
 
 ## Installation
 
@@ -203,36 +205,39 @@ strip = true         # Strip symbols for smaller binary
 
 | Tool | Speed (words/s) | Relative Performance | Benchmark Date |
 |------|----------------|---------------------|----------------|
-| **GPU Scatter-Gather** | 500M-1B | 12-24x faster than wlgen-rs | TBD |
-| **maskprocessor (CPU)** | ~144.8M | 3.46x faster than wlgen-rs | 2025-11-07 |
-| **wlgen-rs (CPU)** | ~41.8M | Baseline (this project) | 2025-11-07 |
-| **Python wlgen** | ~780K | 0.02x (51x slower) | 2025-10-15 |
+| **GPU Scatter-Gather** | 500M-1B | 3-6x faster than wlgen-rs | TBD |
+| **wlgen-rs (CPU, optimized)** | ~164M | **11% faster than maskprocessor!** | 2025-11-07 |
+| **maskprocessor (CPU)** | ~147.5M | 0.90x (baseline C implementation) | 2025-11-07 |
+| **wlgen-rs (CPU, initial)** | ~41.8M | 0.25x (before optimizations) | 2025-11-07 |
+| **Python wlgen** | ~780K | 0.005x (211x slower) | 2025-10-15 |
 
-### Performance Profiling Insights (2025-11-07)
+### Performance Optimizations Applied (2025-11-07)
 
-Using `cargo flamegraph`, we identified the time distribution:
+Through systematic profiling and optimization, we achieved a **3.93x speedup** over the initial implementation:
 
-**Time Breakdown:**
-- **Core wordlist generation: 94.66%**
-  - Odometer algorithm and buffer manipulation
-  - String/buffer operations: ~45%
-  - Character manipulation: ~29%
-- **I/O operations (libc): 12.29%**
-  - System calls for stdout writing (already well-optimized with buffering)
-- **Overhead: ~5%**
-  - Program startup, teardown, misc
+**Optimization 1: Remove UTF-8 Validation (3.58x speedup)**
+- **Problem**: `writeln!` macro called `std::str::from_utf8()` on every word
+- **Profiling**: Flamegraph showed 28.7% of time in UTF-8 validation
+- **Solution**: Write buffer bytes directly using `write_all()`
+- **Result**: 41.8M → 146.2M words/s
 
-**Key Bottleneck Identified:**
-- UTF-8 validation in `current_word()` called on every iteration
-- Each word requires `std::str::from_utf8()` conversion before writing
-- **Optimization opportunity:** Write raw bytes directly to eliminate validation overhead
+**Optimization 2: Increase Buffer Size (1.16x additional speedup)**
+- **Problem**: Small 64KB buffer caused frequent syscalls (shown as 12.29% libc overhead)
+- **Solution**: Increase BufWriter capacity to 1MB (16x larger)
+- **Benchmarking**: Tested 64KB, 1MB, 2MB - found 1MB optimal
+- **Result**: 146.2M → 164.3M words/s
 
-**Potential Improvements:**
-1. Write buffer bytes directly without UTF-8 conversion (estimated 10-15% speedup)
-2. SIMD operations for character updates (estimated 20-30% speedup)
-3. Batch multiple words before writing (estimated 5-10% speedup)
+**Final Performance:**
+- **164.3M words/s average** (676M words in 4.1s)
+- **11.4% faster than maskprocessor** (147.5M words/s)
+- **Pure safe Rust** - no unsafe code required!
 
-These optimizations could potentially bring wlgen-rs closer to maskprocessor's performance (~60-80M words/s).
+**Remaining Bottlenecks:**
+- Core algorithm: ~56% (libc write operations)
+- Buffer/memory operations: ~38%
+- Overhead: ~6%
+
+Further optimization would require unsafe code (SIMD, unchecked access) for ~5-10% gains, but at the cost of memory safety guarantees.
 
 ## Roadmap
 
@@ -242,8 +247,12 @@ These optimizations could potentially bring wlgen-rs closer to maskprocessor's p
 - ✅ CLI with maskprocessor-compatible interface
 - ✅ Custom charsets (?1-?9)
 - ✅ Literal characters in masks
-- ✅ Comprehensive test suite
+- ✅ Comprehensive test suite (19 unit + 9 integration + 6 doc tests)
 - ✅ Performance benchmarks
+- ✅ **Performance optimizations** (3.93x speedup, 11% faster than maskprocessor)
+  - ✅ UTF-8 validation removal
+  - ✅ Buffer size optimization
+  - ✅ Flamegraph profiling and bottleneck analysis
 
 ### Future Enhancements
 
@@ -253,10 +262,13 @@ These optimizations could potentially bring wlgen-rs closer to maskprocessor's p
 - [ ] Progress reporting and ETA
 - [ ] Output to file with optional compression (gzip, zstd)
 
-#### Phase 3: Performance
-- [ ] SIMD optimization for character lookups
+#### Phase 3: Further Performance (Optional)
+- [ ] SIMD optimization for character lookups (requires unsafe/nightly)
 - [ ] Multi-threaded generation with work stealing
 - [ ] Memory-mapped file I/O
+- [ ] Unsafe optimizations (unchecked array access)
+
+Note: Current performance (164M words/s) already exceeds maskprocessor. Further optimization would require sacrificing memory safety for diminishing returns (~5-10% gains).
 
 #### Phase 4: Integration
 - [ ] Python bindings (PyO3)
