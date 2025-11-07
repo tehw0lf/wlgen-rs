@@ -154,3 +154,54 @@ fn test_cli_large_wordlist() {
     assert_eq!(lines[0], "aa11");
     assert_eq!(lines[80], "cc33");
 }
+
+#[test]
+fn test_cli_builtin_lowercase() {
+    let output = Command::new("cargo")
+        .args(["run", "--quiet", "--", "?l"])
+        .output()
+        .expect("failed to execute wlgen-rs");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("invalid UTF-8");
+    let lines: Vec<&str> = stdout.trim().lines().collect();
+
+    assert_eq!(lines.len(), 26);
+    assert_eq!(lines[0], "a");
+    assert_eq!(lines[25], "z");
+}
+
+#[test]
+fn test_cli_builtin_digits() {
+    let output = Command::new("cargo")
+        .args(["run", "--quiet", "--", "?d?d"])
+        .output()
+        .expect("failed to execute wlgen-rs");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("invalid UTF-8");
+    let lines: Vec<&str> = stdout.trim().lines().collect();
+
+    assert_eq!(lines.len(), 100); // 10 * 10
+    assert_eq!(lines[0], "00");
+    assert_eq!(lines[99], "99");
+}
+
+#[test]
+fn test_cli_builtin_mixed() {
+    let output = Command::new("cargo")
+        .args(["run", "--quiet", "--", "?l?d"])
+        .output()
+        .expect("failed to execute wlgen-rs");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8(output.stdout).expect("invalid UTF-8");
+    let lines: Vec<&str> = stdout.trim().lines().collect();
+
+    assert_eq!(lines.len(), 260); // 26 * 10
+    assert_eq!(lines[0], "a0");
+    assert_eq!(lines[259], "z9");
+}

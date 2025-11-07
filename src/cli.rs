@@ -5,6 +5,45 @@
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 
+/// Built-in charsets compatible with hashcat/maskprocessor
+pub mod builtin {
+    /// ?l = lowercase letters
+    pub const LOWERCASE: &[u8] = b"abcdefghijklmnopqrstuvwxyz";
+
+    /// ?u = uppercase letters
+    pub const UPPERCASE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    /// ?d = digits
+    pub const DIGITS: &[u8] = b"0123456789";
+
+    /// ?s = special characters
+    pub const SPECIAL: &[u8] = b" !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+
+    /// Get the built-in charset for a given placeholder character
+    pub fn get(placeholder: u8) -> Option<Vec<u8>> {
+        match placeholder {
+            b'l' => Some(LOWERCASE.to_vec()),
+            b'u' => Some(UPPERCASE.to_vec()),
+            b'd' => Some(DIGITS.to_vec()),
+            b's' => Some(SPECIAL.to_vec()),
+            b'a' => {
+                // ?a = all printable ASCII (?l?u?d?s)
+                let mut all = Vec::new();
+                all.extend_from_slice(LOWERCASE);
+                all.extend_from_slice(UPPERCASE);
+                all.extend_from_slice(DIGITS);
+                all.extend_from_slice(SPECIAL);
+                Some(all)
+            }
+            b'b' => {
+                // ?b = all bytes (0x00-0xFF)
+                Some((0u8..=255u8).collect())
+            }
+            _ => None,
+        }
+    }
+}
+
 /// High-performance wordlist generator for hashcat
 ///
 /// Generates wordlists from custom character sets using mask patterns,
@@ -106,7 +145,7 @@ impl Cli {
 
                 let placeholder = mask_bytes[i + 1];
 
-                // Handle ?1 through ?9
+                // Handle ?1 through ?9 (custom charsets)
                 if (b'1'..=b'9').contains(&placeholder) {
                     let charset_num = (placeholder - b'0') as usize;
                     let charset = self
@@ -119,9 +158,14 @@ impl Cli {
 
                     charsets.push(charset.as_bytes().to_vec());
                     i += 2; // Skip '?' and digit
+                }
+                // Handle built-in charsets (?l, ?u, ?d, ?s, ?a, ?b)
+                else if let Some(charset) = builtin::get(placeholder) {
+                    charsets.push(charset);
+                    i += 2; // Skip '?' and charset character
                 } else {
                     return Err(anyhow!(
-                        "invalid placeholder: ?{} (only ?1-?9 are supported)",
+                        "invalid placeholder: ?{} (supported: ?1-?9, ?l, ?u, ?d, ?s, ?a, ?b)",
                         placeholder as char
                     ));
                 }
@@ -281,6 +325,90 @@ mod tests {
             .unwrap_err()
             .to_string()
             .contains("mask cannot be empty"));
+    }
+
+    // Tests for built-in charsets
+
+    #[test]
+    fn test_builtin_lowercase() {
+        let cli = Cli::parse_from(vec!["wlgen-rs", "?l"]);
+        let charsets = cli.parse_mask().unwrap();
+
+        assert_eq!(charsets.len(), 1);
+        assert_eq!(charsets[0], b"abcdefghijklmnopqrstuvwxyz");
+    }
+
+    #[test]
+    fn test_builtin_uppercase() {
+        let cli = Cli::parse_from(vec!["wlgen-rs", "?u"]);
+        let charsets = cli.parse_mask().unwrap();
+
+        assert_eq!(charsets.len(), 1);
+        assert_eq!(charsets[0], b"ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    }
+
+    #[test]
+    fn test_builtin_digits() {
+        let cli = Cli::parse_from(vec!["wlgen-rs", "?d"]);
+        let charsets = cli.parse_mask().unwrap();
+
+        assert_eq!(charsets.len(), 1);
+        assert_eq!(charsets[0], b"0123456789");
+    }
+
+    #[test]
+    fn test_builtin_special() {
+        let cli = Cli::parse_from(vec!["wlgen-rs", "?s"]);
+        let charsets = cli.parse_mask().unwrap();
+
+        assert_eq!(charsets.len(), 1);
+        assert_eq!(charsets[0], b" !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~");
+    }
+
+    #[test]
+    fn test_builtin_all_ascii() {
+        let cli = Cli::parse_from(vec!["wlgen-rs", "?a"]);
+        let charsets = cli.parse_mask().unwrap();
+
+        assert_eq!(charsets.len(), 1);
+        assert_eq!(charsets[0].len(), 95); // lowercase + uppercase + digits + special
+        assert!(charsets[0].contains(&b'a')); // lowercase
+        assert!(charsets[0].contains(&b'Z')); // uppercase
+        assert!(charsets[0].contains(&b'5')); // digits
+        assert!(charsets[0].contains(&b'!')); // special
+    }
+
+    #[test]
+    fn test_builtin_all_bytes() {
+        let cli = Cli::parse_from(vec!["wlgen-rs", "?b"]);
+        let charsets = cli.parse_mask().unwrap();
+
+        assert_eq!(charsets.len(), 1);
+        assert_eq!(charsets[0].len(), 256); // 0x00-0xFF
+        assert_eq!(charsets[0][0], 0);
+        assert_eq!(charsets[0][255], 255);
+    }
+
+    #[test]
+    fn test_builtin_mixed_with_custom() {
+        let cli = Cli::parse_from(vec!["wlgen-rs", "-1", "XYZ", "?l?1?d"]);
+        let charsets = cli.parse_mask().unwrap();
+
+        assert_eq!(charsets.len(), 3);
+        assert_eq!(charsets[0], b"abcdefghijklmnopqrstuvwxyz");
+        assert_eq!(charsets[1], b"XYZ");
+        assert_eq!(charsets[2], b"0123456789");
+    }
+
+    #[test]
+    fn test_builtin_repeated() {
+        let cli = Cli::parse_from(vec!["wlgen-rs", "?d?d?d"]);
+        let charsets = cli.parse_mask().unwrap();
+
+        assert_eq!(charsets.len(), 3);
+        assert_eq!(charsets[0], b"0123456789");
+        assert_eq!(charsets[1], b"0123456789");
+        assert_eq!(charsets[2], b"0123456789");
     }
 
     #[test]
