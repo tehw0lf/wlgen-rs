@@ -23,3 +23,11 @@ Thumbs.db
 # Test artifacts
 *.profraw
 *.profdata
+
+# Profiling outputs
+flamegraph.svg
+perf.data
+perf.data.old
+
+# External tools (reference implementations)
+maskprocessor/
