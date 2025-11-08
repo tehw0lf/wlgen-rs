@@ -93,9 +93,7 @@ jobs:
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            ./${{ matrix.asset_name }}.tar.gz
-            ./${{ matrix.asset_name }}.zip
+          files: ./${{ matrix.asset_name }}.*
 
   publish-crates:
     name: Publish to crates.io
