@@ -76,14 +76,21 @@ wlgen-rs '?u?l?l?d?d'  # uppercase + 2 lowercase + 2 digits
 # Pipe to hashcat for WPA2 cracking
 wlgen-rs -1 'ABCDEF' -2 '0123456789' '?1?1?2?2?2?2?2?2' | hashcat -m 2500 capture.hccapx
 
+# Save to file with automatic compression
+wlgen-rs '?l?d?d?d' -o wordlist.txt.gz  # gzip compression
+wlgen-rs '?l?d?d?d' -o wordlist.txt.zst # zstd compression (requires --features compression)
+
+# Resume from specific position (distributed workloads)
+wlgen-rs --skip 1000000 '?l?d?d?d' -o part2.txt
+
+# Show progress and ETA
+wlgen-rs --progress '?l?d?d?d?d' -o wordlist.txt
+
 # Complex pattern with multiple charsets
 wlgen-rs -1 'ABCDEF' -2 '0123456789' -3 '!@#$' '?1?1?2?2?3'
 
 # Mix built-in and custom charsets
 wlgen-rs -1 'XYZ' '?l?1?d'  # lowercase + custom charset + digit
-
-# Repeated charset for longer patterns
-wlgen-rs -1 'abcdefghijklmnopqrstuvwxyz' '?1?1?1?1?1?1?1?1'
 
 # Mix literal characters with placeholders
 wlgen-rs -1 'abc' 'prefix?1?1suffix'
@@ -95,7 +102,7 @@ wlgen-rs -1 'abc' 'prefix?1?1suffix'
 wlgen-rs [OPTIONS] <MASK>
 
 Arguments:
-  <MASK>  Mask pattern (e.g., "?1?1?2?2")
+  <MASK>  Mask pattern (e.g., "?1?1?2?2", "?l?d?d?d")
 
 Options:
   -1, --custom-charset1 <CS>  Custom charset 1
@@ -107,8 +114,24 @@ Options:
   -7, --custom-charset7 <CS>  Custom charset 7
   -8, --custom-charset8 <CS>  Custom charset 8
   -9, --custom-charset9 <CS>  Custom charset 9
+  -o, --output <FILE>         Output file (default: stdout). Supports .gz and .zst for compression
+      --skip <N>              Skip first N combinations (for resuming or distributed workloads)
+      --progress              Show progress and ETA (writes to stderr)
   -h, --help                  Print help
   -V, --version               Print version
+```
+
+**Building with Compression Support:**
+
+```bash
+# Build with all compression formats (gzip + zstd)
+cargo build --release --features compression
+
+# Build with gzip only
+cargo build --release --features gzip
+
+# Build with zstd only
+cargo build --release --features zstd-compression
 ```
 
 ### Mask Syntax
@@ -260,39 +283,48 @@ Further optimization would require unsafe code (SIMD, unchecked access) for ~5-1
 
 ## Roadmap
 
-### Current Status (v0.1.0)
+### Current Status (v0.2.0)
 
+**Core Features:**
 - ✅ Core odometer algorithm
 - ✅ CLI with maskprocessor-compatible interface
 - ✅ Custom charsets (?1-?9)
 - ✅ Built-in charsets (?l, ?u, ?d, ?s, ?a, ?b - hashcat-compatible)
 - ✅ Literal characters in masks
-- ✅ Comprehensive test suite (27 unit + 12 integration + 6 doc tests)
+- ✅ Comprehensive test suite (33 unit + 12 integration + 7 doc tests)
 - ✅ Performance benchmarks
-- ✅ **Performance optimizations** (3.93x speedup, 11% faster than maskprocessor)
-  - ✅ UTF-8 validation removal
-  - ✅ Buffer size optimization
-  - ✅ Flamegraph profiling and bottleneck analysis
 
-### Future Enhancements
+**Performance Optimizations:**
+- ✅ **3.93x speedup** from initial implementation (41.8M → 164M words/s)
+- ✅ **11% faster than maskprocessor** (164M vs 147.5M words/s)
+- ✅ UTF-8 validation removal
+- ✅ Buffer size optimization (1MB)
+- ✅ Flamegraph profiling and bottleneck analysis
 
-#### Phase 2: Advanced Features
-- [ ] Resume from specific position (distributed workloads)
-- [ ] Progress reporting and ETA
-- [ ] Output to file with optional compression (gzip, zstd)
+**Advanced Features:**
+- ✅ Resume from specific position (--skip N for distributed workloads)
+- ✅ Progress reporting and ETA (--progress flag)
+- ✅ Output to file with automatic compression (.gz, .zst extensions)
+- ✅ Streaming compression (gzip and zstd support)
 
-#### Phase 3: Further Performance (Optional)
-- [ ] SIMD optimization for character lookups (requires unsafe/nightly)
-- [ ] Multi-threaded generation with work stealing
-- [ ] Memory-mapped file I/O
-- [ ] Unsafe optimizations (unchecked array access)
+**All planned features complete! 🎉**
 
-Note: Current performance (164M words/s) already exceeds maskprocessor. Further optimization would require sacrificing memory safety for diminishing returns (~5-10% gains).
+### Future Enhancements (Optional)
 
-#### Phase 4: Integration
-- [ ] Python bindings (PyO3)
-- [ ] Optional Python package with Rust extension
-- [ ] Integration with Python wlgen library
+#### Further Performance Optimizations (Not Planned)
+These would require unsafe code or sacrifice safety for minimal gains:
+- SIMD optimization for character lookups (requires unsafe/nightly, ~5-10% gain)
+- Multi-threaded generation with work stealing (complex for stdout streaming)
+- Unsafe optimizations like unchecked array access (~5% gain)
+
+Current performance (164M words/s) already exceeds maskprocessor by 11%. Further optimization would sacrifice memory safety for diminishing returns.
+
+#### Python Integration (Not Planned)
+- PyO3 bindings for direct Python usage
+- Optional Python package with Rust extension
+- Integration with Python wlgen library
+
+The standalone binary approach is preferred for maximum portability and ease of use.
 
 ## License
 

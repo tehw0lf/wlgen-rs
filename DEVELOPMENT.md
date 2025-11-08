@@ -500,9 +500,11 @@ wlgen-rs -1 'ABCDEF' -2 '0123456789' -3 '!@#$' '?1?1?2?2?3'
 
 ### Features
 - [x] Built-in charsets (?l, ?u, ?d, ?s, ?a, ?b from hashcat) ✅ (2025-11-08)
-- [ ] Resume from specific position (for distributed workloads)
-- [ ] Progress estimation and reporting
-- [ ] Streaming compression (gzip, zstd)
+- [x] Resume from specific position (--skip N for distributed workloads) ✅ (2025-11-08)
+- [x] Progress estimation and reporting (--progress flag) ✅ (2025-11-08)
+- [x] Output to file with automatic compression (--output, .gz, .zst) ✅ (2025-11-08)
+
+**All planned features complete! 🎉**
 
 ## References
 

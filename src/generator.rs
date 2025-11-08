@@ -112,6 +112,71 @@ impl WordlistGenerator {
         self.charsets.iter().map(|cs| cs.len() as u64).product()
     }
 
+    /// Skips the first N combinations without generating them.
+    ///
+    /// This is useful for:
+    /// - Resuming interrupted wordlist generation
+    /// - Distributed workloads (split keyspace across machines)
+    /// - Generating specific portions of a large keyspace
+    ///
+    /// # Arguments
+    ///
+    /// * `n` - Number of combinations to skip
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if successful, or an error if:
+    /// - `n` exceeds the total keyspace
+    /// - The generator is already exhausted
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use wlgen_rs::WordlistGenerator;
+    ///
+    /// let charsets = vec![b"ab".to_vec(), b"12".to_vec()];
+    /// let mut gen = WordlistGenerator::new(charsets);
+    ///
+    /// // Skip first 2 combinations (a1, a2)
+    /// gen.skip_first(2).unwrap();
+    ///
+    /// // Next word should be b1
+    /// assert_eq!(gen.next(), Some("b1".to_string()));
+    /// ```
+    pub fn skip_first(&mut self, n: u64) -> io::Result<()> {
+        if n == 0 {
+            return Ok(());
+        }
+
+        if self.exhausted {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "generator is already exhausted",
+            ));
+        }
+
+        let keyspace = self.keyspace();
+        if n >= keyspace {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("skip count ({n}) exceeds keyspace ({keyspace})"),
+            ));
+        }
+
+        // Efficiently advance the odometer n times without generating strings
+        for _ in 0..n {
+            if !self.next_word() {
+                self.exhausted = true;
+                return Err(io::Error::new(
+                    io::ErrorKind::UnexpectedEof,
+                    "generator exhausted during skip",
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
     /// Advances the odometer to the next combination.
     ///
     /// Returns `true` if more words are available, `false` if exhausted.
@@ -388,5 +453,86 @@ mod tests {
 
         let result = String::from_utf8(output).unwrap();
         assert_eq!(result, "a1\na2\nb1\nb2\n");
+    }
+
+    #[test]
+    fn test_skip_basic() {
+        let charsets = vec![b"ab".to_vec(), b"12".to_vec()];
+        let mut gen = WordlistGenerator::new(charsets);
+
+        // Skip first 2 combinations (a1, a2)
+        gen.skip_first(2).unwrap();
+
+        // Next word should be b1
+        assert_eq!(gen.next(), Some("b1".to_string()));
+        assert_eq!(gen.next(), Some("b2".to_string()));
+        assert_eq!(gen.next(), None);
+    }
+
+    #[test]
+    fn test_skip_zero() {
+        let charsets = vec![b"ab".to_vec(), b"12".to_vec()];
+        let mut gen = WordlistGenerator::new(charsets);
+
+        // Skip 0 should be a no-op
+        gen.skip_first(0).unwrap();
+
+        assert_eq!(gen.next(), Some("a1".to_string()));
+    }
+
+    #[test]
+    fn test_skip_all_but_one() {
+        let charsets = vec![b"ab".to_vec(), b"12".to_vec()];
+        let mut gen = WordlistGenerator::new(charsets);
+
+        // Skip 3 out of 4 combinations
+        gen.skip_first(3).unwrap();
+
+        // Only last word should remain
+        assert_eq!(gen.next(), Some("b2".to_string()));
+        assert_eq!(gen.next(), None);
+    }
+
+    #[test]
+    fn test_skip_exceeds_keyspace() {
+        let charsets = vec![b"ab".to_vec(), b"12".to_vec()];
+        let mut gen = WordlistGenerator::new(charsets);
+
+        // Trying to skip 4 when keyspace is 4 should fail
+        let result = gen.skip_first(4);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("exceeds keyspace"));
+    }
+
+    #[test]
+    fn test_skip_exhausted_generator() {
+        let charsets = vec![b"a".to_vec()];
+        let mut gen = WordlistGenerator::new(charsets);
+
+        // Exhaust the generator
+        gen.next();
+
+        // Trying to skip on exhausted generator should fail
+        let result = gen.skip_first(1);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("already exhausted"));
+    }
+
+    #[test]
+    fn test_skip_with_write_to() {
+        let charsets = vec![b"ab".to_vec(), b"12".to_vec()];
+        let mut gen = WordlistGenerator::new(charsets);
+
+        // Skip first 2
+        gen.skip_first(2).unwrap();
+
+        let mut output = Vec::new();
+        gen.write_to(&mut output).unwrap();
+
+        let result = String::from_utf8(output).unwrap();
+        assert_eq!(result, "b1\nb2\n");
     }
 }

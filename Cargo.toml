@@ -16,6 +16,14 @@ path = "src/main.rs"
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
 anyhow = "1.0"
+flate2 = { version = "1.0", optional = true }
+zstd = { version = "0.13", optional = true }
+
+[features]
+default = []
+compression = ["flate2", "zstd"]
+gzip = ["flate2"]
+zstd-compression = ["zstd"]
 
 [dev-dependencies]
 criterion = "0.5"

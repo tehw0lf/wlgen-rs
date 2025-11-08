@@ -111,6 +111,14 @@ pub struct Cli {
     /// Show progress and ETA (writes to stderr, not stdout)
     #[arg(long, default_value_t = false)]
     pub progress: bool,
+
+    /// Skip the first N combinations (useful for resuming or distributed workloads)
+    #[arg(long, value_name = "N", default_value_t = 0)]
+    pub skip: u64,
+
+    /// Output file (default: stdout). Supports .gz and .zst extensions for compression.
+    #[arg(short = 'o', long = "output", value_name = "FILE")]
+    pub output: Option<String>,
 }
 
 impl Cli {
