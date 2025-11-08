@@ -1,4 +1,6 @@
-# wlgen-rs: CPU-Based Rust Wordlist Generator
+# wlgen-rs: Development History & Roadmap
+
+> **Project Status:** Core implementation complete! This document tracks the development journey, architectural decisions, and future enhancement opportunities.
 
 > **🚀 Achievement:** This CPU implementation now achieves **~164M words/s** - **11% faster than maskprocessor**! For even higher performance (500M-1B words/s), see the **GPU Scatter-Gather Wordlist Generator** project.
 
