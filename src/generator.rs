@@ -299,7 +299,7 @@ impl WordlistGenerator {
             count += 1;
 
             // Update progress periodically
-            if count % WORDS_PER_UPDATE == 0 || last_update.elapsed() >= UPDATE_INTERVAL {
+            if count.is_multiple_of(WORDS_PER_UPDATE) || last_update.elapsed() >= UPDATE_INTERVAL {
                 let elapsed = start_time.elapsed().as_secs_f64();
                 let rate = count as f64 / elapsed;
                 let percentage = (count as f64 / total as f64) * 100.0;

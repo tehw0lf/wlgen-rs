@@ -36,8 +36,8 @@ fn main() -> Result<()> {
         }
         Some(path) => {
             // Write to file with optional compression based on extension
-            let file =
-                File::create(path).with_context(|| format!("failed to create output file: {path}"))?;
+            let file = File::create(path)
+                .with_context(|| format!("failed to create output file: {path}"))?;
 
             #[cfg(feature = "compression")]
             {
