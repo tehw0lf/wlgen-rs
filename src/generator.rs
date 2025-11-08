@@ -5,6 +5,7 @@
 //! position indices like an odometer.
 
 use std::io::{self, BufWriter, Write};
+use std::time::{Duration, Instant};
 
 /// A high-performance wordlist generator using the odometer pattern.
 ///
@@ -192,6 +193,82 @@ impl WordlistGenerator {
             buf_writer.write_all(&self.buffer)?;
             buf_writer.write_all(b"\n")?;
         }
+
+        buf_writer.flush()
+    }
+
+    /// Writes all words to the given writer with progress reporting.
+    ///
+    /// Progress is written to stderr and includes:
+    /// - Current position / total combinations
+    /// - Percentage complete
+    /// - Current throughput (words/s)
+    /// - Estimated time remaining (ETA)
+    ///
+    /// Progress updates every 100ms or every 1M words, whichever is less frequent.
+    ///
+    /// # Arguments
+    ///
+    /// * `writer` - Any type implementing `Write` (e.g., `std::io::stdout()`)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing fails.
+    pub fn write_to_with_progress<W: Write>(&mut self, writer: W) -> io::Result<()> {
+        let mut buf_writer = BufWriter::with_capacity(1024 * 1024, writer);
+        let total = self.keyspace();
+        let mut count: u64 = 1; // Start at 1 (we write first word immediately)
+        let start_time = Instant::now();
+        let mut last_update = Instant::now();
+        const UPDATE_INTERVAL: Duration = Duration::from_millis(100);
+        const WORDS_PER_UPDATE: u64 = 1_000_000;
+
+        // Write the first word
+        buf_writer.write_all(&self.buffer)?;
+        buf_writer.write_all(b"\n")?;
+
+        // Generate and write remaining words with progress reporting
+        while self.next_word() {
+            buf_writer.write_all(&self.buffer)?;
+            buf_writer.write_all(b"\n")?;
+            count += 1;
+
+            // Update progress periodically
+            if count % WORDS_PER_UPDATE == 0 || last_update.elapsed() >= UPDATE_INTERVAL {
+                let elapsed = start_time.elapsed().as_secs_f64();
+                let rate = count as f64 / elapsed;
+                let percentage = (count as f64 / total as f64) * 100.0;
+                let remaining_words = total - count;
+                let eta_seconds = if rate > 0.0 {
+                    remaining_words as f64 / rate
+                } else {
+                    0.0
+                };
+
+                // Write to stderr (not stdout, to avoid mixing with wordlist)
+                eprint!(
+                    "\r[Progress] {}/{} ({:.2}%) | {:.2}M words/s | ETA: {:.1}s   ",
+                    count,
+                    total,
+                    percentage,
+                    rate / 1_000_000.0,
+                    eta_seconds
+                );
+
+                last_update = Instant::now();
+            }
+        }
+
+        // Final progress update
+        let elapsed = start_time.elapsed().as_secs_f64();
+        let rate = count as f64 / elapsed;
+        eprintln!(
+            "\r[Complete] {}/{} (100.00%) | {:.2}M words/s | Total: {:.2}s   ",
+            count,
+            total,
+            rate / 1_000_000.0,
+            elapsed
+        );
 
         buf_writer.flush()
     }

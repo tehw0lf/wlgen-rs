@@ -497,10 +497,10 @@ wlgen-rs -1 'ABCDEF' -2 '0123456789' -3 '!@#$' '?1?1?2?2?3'
 **Conclusion:** Current performance (164M words/s, 11% faster than maskprocessor) is excellent using pure safe Rust. Further optimization would sacrifice code quality for minimal gains. Focus shifts to useful features instead.
 
 ### Features
+- [x] Built-in charsets (?l, ?u, ?d, ?s, ?a, ?b from hashcat) ✅ (2025-11-08)
 - [ ] Resume from specific position (for distributed workloads)
 - [ ] Progress estimation and reporting
 - [ ] Streaming compression (gzip, zstd)
-- [ ] Built-in charsets (?l, ?u, ?d, ?s from hashcat)
 
 ## References
 

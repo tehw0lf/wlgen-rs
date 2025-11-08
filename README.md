@@ -69,11 +69,18 @@ cargo install wlgen-rs
 wlgen-rs -1 'abc' -2 '123' '?1?2'
 # Output: a1, a2, a3, b1, b2, b3, c1, c2, c3
 
+# Use built-in charsets (hashcat-compatible)
+wlgen-rs '?l?d?d?d'  # lowercase letter + 3 digits (e.g., a000, a001, ..., z999)
+wlgen-rs '?u?l?l?d?d'  # uppercase + 2 lowercase + 2 digits
+
 # Pipe to hashcat for WPA2 cracking
 wlgen-rs -1 'ABCDEF' -2 '0123456789' '?1?1?2?2?2?2?2?2' | hashcat -m 2500 capture.hccapx
 
 # Complex pattern with multiple charsets
 wlgen-rs -1 'ABCDEF' -2 '0123456789' -3 '!@#$' '?1?1?2?2?3'
+
+# Mix built-in and custom charsets
+wlgen-rs -1 'XYZ' '?l?1?d'  # lowercase + custom charset + digit
 
 # Repeated charset for longer patterns
 wlgen-rs -1 'abcdefghijklmnopqrstuvwxyz' '?1?1?1?1?1?1?1?1'
@@ -106,14 +113,26 @@ Options:
 
 ### Mask Syntax
 
-Mask patterns use `?N` placeholders where `N` is 1-9, referencing custom charsets defined via command-line arguments.
+Mask patterns support two types of placeholders:
 
-Examples:
+#### Built-in Charsets (hashcat-compatible)
+- `?l` - lowercase letters (a-z)
+- `?u` - uppercase letters (A-Z)
+- `?d` - digits (0-9)
+- `?s` - special characters (space and punctuation)
+- `?a` - all printable ASCII (?l + ?u + ?d + ?s)
+- `?b` - all bytes (0x00-0xFF)
+
+#### Custom Charsets
+Use `?N` placeholders where `N` is 1-9, referencing custom charsets defined via command-line arguments.
+
+#### Examples:
+- `?l?d?d` - lowercase letter + 2 digits (a00, a01, ..., z99)
+- `?u?l?l?l` - uppercase + 3 lowercase (Aaaa, Aaab, ..., Zzzz)
 - `?1?2` - Two positions using charset 1 and charset 2
 - `?1?1?1` - Three positions all using charset 1
+- `?l?1?d` - Lowercase + custom charset 1 + digit
 - `prefix?1suffix` - Literal characters mixed with charset placeholder
-
-Note: Built-in charsets (like `?l`, `?u`, `?d` from hashcat) are not yet supported in this version.
 
 ## Architecture
 
@@ -246,8 +265,9 @@ Further optimization would require unsafe code (SIMD, unchecked access) for ~5-1
 - ✅ Core odometer algorithm
 - ✅ CLI with maskprocessor-compatible interface
 - ✅ Custom charsets (?1-?9)
+- ✅ Built-in charsets (?l, ?u, ?d, ?s, ?a, ?b - hashcat-compatible)
 - ✅ Literal characters in masks
-- ✅ Comprehensive test suite (19 unit + 9 integration + 6 doc tests)
+- ✅ Comprehensive test suite (27 unit + 12 integration + 6 doc tests)
 - ✅ Performance benchmarks
 - ✅ **Performance optimizations** (3.93x speedup, 11% faster than maskprocessor)
   - ✅ UTF-8 validation removal
@@ -257,7 +277,6 @@ Further optimization would require unsafe code (SIMD, unchecked access) for ~5-1
 ### Future Enhancements
 
 #### Phase 2: Advanced Features
-- [ ] Built-in charsets (?l, ?u, ?d, ?s from hashcat)
 - [ ] Resume from specific position (distributed workloads)
 - [ ] Progress reporting and ETA
 - [ ] Output to file with optional compression (gzip, zstd)

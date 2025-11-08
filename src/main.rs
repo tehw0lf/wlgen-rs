@@ -18,8 +18,12 @@ fn main() -> Result<()> {
     // Create the wordlist generator
     let mut generator = WordlistGenerator::new(charsets);
 
-    // Stream words to stdout (buffered for performance)
-    generator.write_to(stdout())?;
+    // Stream words to stdout (with optional progress reporting to stderr)
+    if cli.progress {
+        generator.write_to_with_progress(stdout())?;
+    } else {
+        generator.write_to(stdout())?;
+    }
 
     Ok(())
 }

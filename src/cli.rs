@@ -101,11 +101,16 @@ pub struct Cli {
     #[arg(short = '9', long = "custom-charset9", value_name = "CS")]
     pub charset9: Option<String>,
 
-    /// Mask pattern (e.g., "?1?1?2?2")
+    /// Mask pattern (e.g., "?1?1?2?2", "?l?d?d?d", "?u?l?l?d?d")
     ///
     /// Use ?1-?9 to reference custom charsets defined with -1 through -9.
-    /// Built-in charsets (like ?l, ?u, ?d from hashcat) are not yet supported.
+    /// Built-in charsets: ?l (lowercase), ?u (uppercase), ?d (digits),
+    /// ?s (special), ?a (all printable), ?b (all bytes 0x00-0xFF)
     pub mask: String,
+
+    /// Show progress and ETA (writes to stderr, not stdout)
+    #[arg(long, default_value_t = false)]
+    pub progress: bool,
 }
 
 impl Cli {
