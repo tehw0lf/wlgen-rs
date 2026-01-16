@@ -3,9 +3,6 @@
 **/*.rs.bk
 *.pdb
 
-# Cargo.lock for binaries (keep for libraries)
-Cargo.lock
-
 # IDE files
 .idea/
 .vscode/
