@@ -19,7 +19,6 @@ jobs:
     with:
       tool: cargo
       artifact_path: target/release/wlgen-rs
-      event_name: ${{ github.event_name }}
 
       # Rust configuration
       rust_version: stable
