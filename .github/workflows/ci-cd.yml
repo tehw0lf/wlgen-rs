@@ -18,6 +18,9 @@ jobs:
       security-events: write # Required for SARIF uploads
     with:
       tool: cargo
+      test: "test"
+      build_branch: "build --release"
+      build_main: "build --release"
       artifact_path: target/release/wlgen-rs
 
       # Rust configuration
